@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UCURide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0d1b2a;
+    --navy2: #1a2d42;
+    --teal: #00c9a7;
+    --teal2: #00a88a;
+    --yellow: #ffd166;
+    --red: #ef476f;
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --text: #0d1b2a;
+    --muted: #7a8fa6;
+    --border: #e2e8f0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+  .phone-shell {
+    width: 390px; height: 844px; background: var(--bg);
+    border-radius: 48px; overflow: hidden; position: relative;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 0 0 2px rgba(255,255,255,0.08);
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 34px; background: var(--navy); border-radius: 0 0 20px 20px; z-index: 99;
+  }
+
+  /* SCREENS */
+  .screen { position: absolute; inset: 0; overflow: hidden; transition: opacity .35s, transform .35s; opacity: 0; pointer-events: none; transform: translateX(30px); }
+  .screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+
+  /* SPLASH */
+  #splash { background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+  .splash-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .logo-icon { width: 80px; height: 80px; background: var(--teal); border-radius: 24px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 44px; height: 44px; fill: white; }
+  .logo-text { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: white; letter-spacing: -1px; }
+  .logo-text span { color: var(--teal); }
+  .splash-sub { color: #7a8fa6; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+  .splash-btn { background: var(--teal); color: var(--navy); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; padding: 16px 48px; border: none; border-radius: 50px; cursor: pointer; margin-top: 20px; transition: transform .15s, box-shadow .15s; }
+  .splash-btn:active { transform: scale(.96); }
+
+  /* SCROLLABLE CONTENT */
+  .scroll-content { height: 100%; overflow-y: auto; padding-bottom: 80px; padding-top: 50px; scrollbar-width: none; }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* STATUS BAR */
+  .status-bar { position: absolute; top: 0; left: 0; right: 0; height: 50px; z-index: 50; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 20px 8px; }
+  .status-time { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; color: var(--navy); }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons span { font-size: 11px; color: var(--navy); font-weight: 600; }
+
+  /* HEADER */
+  .header { padding: 60px 20px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .header-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; color: var(--text); }
+  .header-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .avatar { width: 42px; height: 42px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .avatar svg { width: 22px; height: 22px; fill: white; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
+    background: var(--navy); border-radius: 28px 28px 0 0;
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 10px; z-index: 50;
+  }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 8px 14px; border-radius: 16px; transition: background .2s; }
+  .nav-btn.active { background: rgba(0,201,167,0.15); }
+  .nav-btn svg { width: 22px; height: 22px; fill: none; stroke: #4a6080; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke .2s; }
+  .nav-btn.active svg { stroke: var(--teal); }
+  .nav-btn span { font-size: 10px; color: #4a6080; font-weight: 600; transition: color .2s; }
+  .nav-btn.active span { color: var(--teal); }
+
+  /* CARDS */
+  .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+
+  /* HOME */
+  .hero-banner { margin: 0 20px; background: var(--navy); border-radius: 24px; padding: 22px; display: flex; align-items: center; justify-content: space-between; overflow: hidden; position: relative; }
+  .hero-banner::before { content:''; position:absolute; right:-20px; top:-20px; width:100px; height:100px; background: var(--teal); opacity:.12; border-radius: 50%; }
+  .hero-text h2 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 19px; color: white; line-height: 1.3; }
+  .hero-text p { font-size: 12px; color: #7a8fa6; margin-top: 4px; }
+  .hero-icon { width: 52px; height: 52px; background: var(--teal); border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .hero-icon svg { width: 28px; height: 28px; fill: white; }
+
+  .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px; }
+  .qa-btn { background: var(--card); border-radius: 20px; padding: 18px; border: none; cursor: pointer; text-align: left; box-shadow: 0 2px 16px rgba(0,0,0,0.06); transition: transform .15s; }
+  .qa-btn:active { transform: scale(.97); }
+  .qa-btn .qa-icon { width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .qa-btn .qa-icon svg { width: 22px; height: 22px; }
+  .qa-btn h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); }
+  .qa-btn p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; color: var(--text); padding: 0 20px; }
+
+  /* RIDE CARDS */
+  .ride-card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 12px; }
+  .ride-card.new-ride { border: 2px solid var(--teal); animation: highlightNew .6s ease; }
+  @keyframes highlightNew { 0%{ box-shadow: 0 0 0 0 rgba(0,201,167,0.6); } 70%{ box-shadow: 0 0 0 12px rgba(0,201,167,0); } 100%{ box-shadow: 0 0 0 0 rgba(0,201,167,0); } }
+  .ride-header { display: flex; align-items: center; gap: 10px; }
+  .ride-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--navy); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ride-avatar svg { width: 20px; height: 20px; fill: white; }
+  .ride-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); }
+  .ride-meta { font-size: 11px; color: var(--muted); }
+  .ride-badge { margin-left: auto; background: var(--teal); color: var(--navy); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; font-family: 'Syne', sans-serif; }
+  .ride-badge.new { background: var(--yellow); }
+  .route-line { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; background: var(--bg); border-radius: 14px; }
+  .route-point { display: flex; align-items: center; gap: 10px; }
+  .route-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .route-dot.from { background: var(--teal); }
+  .route-dot.to { background: var(--red); }
+  .route-dashes { width: 10px; height: 16px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .route-dashes span { width: 2px; height: 5px; background: var(--border); display: block; border-radius: 2px; }
+  .route-label { font-size: 13px; color: var(--text); font-weight: 500; }
+  .ride-footer { display: flex; align-items: center; justify-content: space-between; }
+  .ride-info-chips { display: flex; gap: 8px; }
+  .chip { background: var(--bg); border-radius: 20px; padding: 5px 10px; font-size: 11px; color: var(--muted); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  .chip svg { width: 12px; height: 12px; stroke: var(--muted); fill: none; stroke-width: 2; }
+  .book-btn { background: var(--navy); color: white; border: none; border-radius: 14px; padding: 8px 18px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; transition: background .2s, transform .15s; }
+  .book-btn:active { transform: scale(.95); background: var(--teal); color: var(--navy); }
+
+  /* OFFER FORM */
+  .form-section { padding: 0 20px; display: flex; flex-direction: column; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+  .form-input { background: var(--card); border: 2px solid var(--border); border-radius: 14px; padding: 13px 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; color: var(--text); outline: none; transition: border-color .2s; width: 100%; }
+  .form-input:focus { border-color: var(--teal); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .submit-btn { background: var(--teal); color: var(--navy); border: none; border-radius: 16px; padding: 16px; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; cursor: pointer; transition: transform .15s, box-shadow .2s; box-shadow: 0 6px 24px rgba(0,201,167,0.35); }
+  .submit-btn:active { transform: scale(.97); }
+  .submit-btn:hover { box-shadow: 0 8px 32px rgba(0,201,167,0.5); }
+
+  /* SUCCESS TOAST */
+  .toast { position: absolute; top: 60px; left: 20px; right: 20px; background: var(--teal); color: var(--navy); padding: 14px 18px; border-radius: 16px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; z-index: 200; transform: translateY(-120px); opacity: 0; transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s; box-shadow: 0 8px 32px rgba(0,201,167,0.4); display: flex; align-items: center; gap: 10px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast svg { width: 20px; height: 20px; fill: none; stroke: var(--navy); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+  /* MAP SCREEN */
+  .map-container { height: 260px; background: #d4e7d0; position: relative; overflow: hidden; border-radius: 0 0 28px 28px; }
+  .map-grid { position: absolute; inset: 0; }
+  .map-road-h { position: absolute; background: white; opacity: .8; height: 8px; left: 0; right: 0; border-radius: 4px; }
+  .map-road-v { position: absolute; background: white; opacity: .8; width: 8px; top: 0; bottom: 0; border-radius: 4px; }
+  .map-building { position: absolute; background: #b8d4b0; border-radius: 4px; }
+  .car-dot { position: absolute; width: 28px; height: 28px; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,201,167,0.5); animation: moveCar 4s linear infinite, pulse 2s ease-in-out infinite; }
+  .car-dot svg { width: 16px; height: 16px; fill: white; }
+  @keyframes moveCar { 0%{left:20%; top:55%;} 25%{left:40%; top:40%;} 50%{left:60%; top:50%;} 75%{left:75%; top:35%;} 100%{left:20%; top:55%;} }
+  @keyframes pulse { 0%,100%{box-shadow:0 4px 12px rgba(0,201,167,0.5);} 50%{box-shadow:0 4px 24px rgba(0,201,167,0.8);} }
+  .marker { position: absolute; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; }
+  .marker.a { background: var(--teal); top: 55%; left: 20%; }
+  .marker.b { background: var(--red); top: 35%; left: 75%; }
+  .track-info { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .track-card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+  .track-driver { display: flex; align-items: center; gap: 12px; }
+  .driver-avatar { width: 48px; height: 48px; background: var(--navy); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .driver-avatar svg { width: 26px; height: 26px; fill: white; }
+  .driver-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; color: var(--text); }
+  .driver-sub { font-size: 12px; color: var(--muted); }
+  .eta-badge { margin-left: auto; text-align: center; }
+  .eta-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; color: var(--teal); }
+  .eta-label { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--teal); border-radius: 3px; width: 45%; animation: progressMove 4s linear infinite; }
+  @keyframes progressMove { 0%{width:20%;} 100%{width:85%;} }
+  .passengers-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .passenger-chip { display: flex; align-items: center; gap: 6px; background: var(--bg); border-radius: 20px; padding: 6px 12px; }
+  .p-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+  .p-dot.empty { background: var(--border); }
+  .p-name { font-size: 12px; color: var(--text); font-weight: 500; }
+
+  /* PROFILE */
+  .profile-hero { background: var(--navy); padding: 60px 20px 28px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .profile-avatar { width: 80px; height: 80px; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid rgba(255,255,255,0.15); }
+  .profile-avatar svg { width: 44px; height: 44px; fill: white; }
+  .profile-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: white; }
+  .profile-tag { font-size: 13px; color: #7a8fa6; }
+  .profile-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); border-radius: 20px; overflow: hidden; margin: 0 20px; }
+  .stat-cell { background: var(--card); padding: 16px; text-align: center; }
+  .stat-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: var(--teal); }
+  .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .menu-list { padding: 0 20px; display: flex; flex-direction: column; gap: 8px; }
+  .menu-item { background: var(--card); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
+  .menu-icon { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+  .menu-icon svg { width: 18px; height: 18px; }
+  .menu-label { font-weight: 600; font-size: 14px; color: var(--text); }
+  .menu-arrow { margin-left: auto; color: var(--muted); font-size: 18px; line-height: 1; }
+
+  /* SEARCH FILTERS */
+  .filters { display: flex; gap: 8px; padding: 0 20px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-chip { background: var(--card); border: 2px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; cursor: pointer; transition: all .2s; flex-shrink: 0; }
+  .filter-chip.active { background: var(--navy); border-color: var(--navy); color: var(--teal); }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-state svg { width: 48px; height: 48px; stroke: var(--border); fill: none; stroke-width: 1.5; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  .rides-list { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+
+<div class="phone-shell">
+  <div class="notch"></div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span id="toastMsg">Viaje publicado con exito</span>
+  </div>
+
+  <!-- STATUS BAR (shown on non-splash screens) -->
+  <div class="status-bar" id="statusBar" style="display:none;">
+    <span class="status-time">10:42</span>
+    <div class="status-icons"><span>UCU</span><span>4G</span></div>
+  </div>
+
+  <!-- ==================== SPLASH ==================== -->
+  <div class="screen active" id="splash">
+    <div class="splash-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+      </div>
+      <div class="logo-text">UCU<span>Ride</span></div>
+      <div class="splash-sub">Compartir es llegar</div>
+    </div>
+    <button class="splash-btn" onclick="goTo('home')">Entrar</button>
+  </div>
+
+  <!-- ==================== HOME ==================== -->
+  <div class="screen" id="home">
+    <div class="scroll-content">
+      <div class="header">
+        <div>
+          <div class="header-title">Hola, Sofia!</div>
+          <div class="header-sub">Lunes 11 Mayo - UCU</div>
+        </div>
+        <div class="avatar"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="hero-banner">
+          <div class="hero-text">
+            <h2>Tu proximo viaje<br/>en minutos</h2>
+            <p>Conecta con companeros de ruta</p>
+          </div>
+          <div class="hero-icon"><svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg></div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="goTo('offer')">
+            <div class="qa-icon" style="background:#e8faf6;"><svg viewBox="0 0 24 24" style="stroke:var(--teal);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+            <h3>Ofrecer</h3>
+            <p>Publica un viaje</p>
+          </button>
+          <button class="qa-btn" onclick="goTo('search')">
+            <div class="qa-icon" style="background:#eef2ff;"><svg viewBox="0 0 24 24" style="stroke:#6366f1;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+            <h3>Buscar</h3>
+            <p>Encuentra tu ruta</p>
+          </button>
+          <button class="qa-btn" onclick="goTo('track')">
+            <div class="qa-icon" style="background:#fff7e6;"><svg viewBox="0 0 24 24" style="stroke:var(--yellow);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <h3>Seguir</h3>
+            <p>Viaje en curso</p>
+          </button>
+          <button class="qa-btn" onclick="goTo('profile')">
+            <div class="qa-icon" style="background:#fef1f4;"><svg viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <h3>Perfil</h3>
+            <p>Tu cuenta</p>
+          </button>
+        </div>
+
+        <div class="section-title">Viajes recientes</div>
+        <div class="rides-list" id="homeRecentList"></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Inicio</span></button>
+      <button class="nav-btn" onclick="goTo('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar</span></button>
+      <button class="nav-btn" onclick="goTo('offer')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Ofrecer</span></button>
+      <button class="nav-btn" onclick="goTo('track')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Seguir</span></button>
+      <button class="nav-btn" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== OFFER ==================== -->
+  <div class="screen" id="offer">
+    <div class="scroll-content">
+      <div class="header">
+        <div>
+          <div class="header-title">Ofrecer Viaje</div>
+          <div class="header-sub">Publica tu ruta para companeros</div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-group">
+          <label class="form-label">Desde</label>
+          <input class="form-input" id="fromInput" type="text" placeholder="Tu punto de partida..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hasta</label>
+          <input class="form-input" id="toInput" type="text" placeholder="Destino..." />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fecha</label>
+            <input class="form-input" id="dateInput" type="date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hora</label>
+            <input class="form-input" id="timeInput" type="time" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Asientos</label>
+            <input class="form-input" id="seatsInput" type="number" min="1" max="6" placeholder="3" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Precio (UYU)</label>
+            <input class="form-input" id="priceInput" type="number" placeholder="80" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vehiculo</label>
+          <input class="form-input" id="carInput" type="text" placeholder="Ej: VW Gol Gris" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota (opcional)</label>
+          <input class="form-input" id="noteInput" type="text" placeholder="Ej: Paso por Tres Cruces..." />
+        </div>
+        <button class="submit-btn" onclick="publishRide()">Publicar Viaje</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Inicio</span></button>
+      <button class="nav-btn" onclick="goTo('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar</span></button>
+      <button class="nav-btn active" onclick="goTo('offer')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Ofrecer</span></button>
+      <button class="nav-btn" onclick="goTo('track')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Seguir</span></button>
+      <button class="nav-btn" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== SEARCH ==================== -->
+  <div class="screen" id="search">
+    <div class="scroll-content">
+      <div class="header">
+        <div>
+          <div class="header-title">Buscar Viaje</div>
+          <div class="header-sub">Viajes disponibles hoy</div>
+        </div>
+      </div>
+      <div style="padding:0 20px 12px;">
+        <input class="form-input" id="searchInput" type="text" placeholder="Buscar por ruta o destino..." oninput="filterRides()" />
+      </div>
+      <div class="filters">
+        <div class="filter-chip active" onclick="setFilter('todos',this)">Todos</div>
+        <div class="filter-chip" onclick="setFilter('manana',this)">Manana</div>
+        <div class="filter-chip" onclick="setFilter('tarde',this)">Tarde</div>
+        <div class="filter-chip" onclick="setFilter('noche',this)">Noche</div>
+      </div>
+      <div style="height:12px;"></div>
+      <div class="rides-list" id="searchRidesList"></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Inicio</span></button>
+      <button class="nav-btn active" onclick="goTo('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar</span></button>
+      <button class="nav-btn" onclick="goTo('offer')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Ofrecer</span></button>
+      <button class="nav-btn" onclick="goTo('track')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Seguir</span></button>
+      <button class="nav-btn" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== TRACK ==================== -->
+  <div class="screen" id="track">
+    <div class="map-container">
+      <div class="map-grid">
+        <div class="map-road-h" style="top:30%;"></div>
+        <div class="map-road-h" style="top:55%;"></div>
+        <div class="map-road-h" style="top:75%;"></div>
+        <div class="map-road-v" style="left:25%;"></div>
+        <div class="map-road-v" style="left:55%;"></div>
+        <div class="map-road-v" style="left:78%;"></div>
+        <div class="map-building" style="width:40px;height:30px;top:15%;left:10%;"></div>
+        <div class="map-building" style="width:28px;height:40px;top:38%;left:35%;"></div>
+        <div class="map-building" style="width:50px;height:22px;top:20%;left:60%;"></div>
+        <div class="map-building" style="width:32px;height:35px;top:60%;left:80%;"></div>
+        <div class="map-building" style="width:24px;height:28px;top:10%;left:82%;"></div>
+      </div>
+      <div class="marker a"></div>
+      <div class="marker b"></div>
+      <div class="car-dot">
+        <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:0; height:calc(100% - 260px);">
+      <div class="track-info">
+        <div class="track-card">
+          <div class="track-driver">
+            <div class="driver-avatar"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div>
+              <div class="driver-name">Carlos M.</div>
+              <div class="driver-sub">VW Gol Gris - SBD 1234</div>
+            </div>
+            <div class="eta-badge">
+              <div class="eta-num">8</div>
+              <div class="eta-label">min</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;">
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;">
+              <span style="font-size:11px;color:var(--muted);">Pocitos</span>
+              <span style="font-size:11px;color:var(--muted);">UCU Montevideo</span>
+            </div>
+          </div>
+        </div>
+        <div class="track-card">
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;">Pasajeros (3/4)</div>
+          <div class="passengers-row">
+            <div class="passenger-chip"><div class="p-dot"></div><span class="p-name">Sofia T.</span></div>
+            <div class="passenger-chip"><div class="p-dot"></div><span class="p-name">Lucas R.</span></div>
+            <div class="passenger-chip"><div class="p-dot"></div><span class="p-name">Ana V.</span></div>
+            <div class="passenger-chip"><div class="p-dot empty"></div><span class="p-name" style="color:var(--muted);">Libre</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Inicio</span></button>
+      <button class="nav-btn" onclick="goTo('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar</span></button>
+      <button class="nav-btn" onclick="goTo('offer')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Ofrecer</span></button>
+      <button class="nav-btn active" onclick="goTo('track')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Seguir</span></button>
+      <button class="nav-btn" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></button>
+    </div>
+  </div>
+
+  <!-- ==================== PROFILE ==================== -->
+  <div class="screen" id="profile">
+    <div class="scroll-content" style="padding-top:0;">
+      <div class="profile-hero">
+        <div class="profile-avatar"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="profile-name">Sofia Torres</div>
+        <div class="profile-tag">Estudiante UCU - Derecho 3er ano</div>
+      </div>
+      <div style="height:16px;"></div>
+      <div class="profile-stats">
+        <div class="stat-cell"><div class="stat-num" id="statViajes">12</div><div class="stat-lbl">Viajes</div></div>
+        <div class="stat-cell"><div class="stat-num" id="statCO2">24kg</div><div class="stat-lbl">CO2 ahorrado</div></div>
+        <div class="stat-cell"><div class="stat-num" id="statEstrellas">4.9</div><div class="stat-lbl">Estrellas</div></div>
+      </div>
+      <div style="height:16px;"></div>
+      <div class="menu-list">
+        <div class="menu-item"><div class="menu-icon" style="background:#e8faf6;"><svg viewBox="0 0 24 24" style="stroke:var(--teal);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="menu-label">Mi perfil</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><div class="menu-icon" style="background:#fff7e6;"><svg viewBox="0 0 24 24" style="stroke:var(--yellow);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><span class="menu-label">Mis viajes</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><div class="menu-icon" style="background:#eef2ff;"><svg viewBox="0 0 24 24" style="stroke:#6366f1;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div><span class="menu-label">Pagos</span><span class="menu-arrow">›</span></div>
+        <div class="menu-item"><div class="menu-icon" style="background:#fef1f4;"><svg viewBox="0 0 24 24" style="stroke:var(--red);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div><span class="menu-label">Cerrar sesion</span><span class="menu-arrow">›</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="goTo('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Inicio</span></button>
+      <button class="nav-btn" onclick="goTo('search')"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar</span></button>
+      <button class="nav-btn" onclick="goTo('offer')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>Ofrecer</span></button>
+      <button class="nav-btn" onclick="goTo('track')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Seguir</span></button>
+      <button class="nav-btn active" onclick="goTo('profile')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Perfil</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  ESTADO GLOBAL — fuente unica de verdad
+// ============================================================
+let ridesDB = [
+  { id: 1, driver: 'Carlos M.', from: 'Pocitos', to: 'UCU Montevideo', time: '07:45', date: '2026-05-11', seats: 2, price: 80, car: 'VW Gol Gris', isNew: false },
+  { id: 2, driver: 'Valentina R.', from: 'Centro', to: 'UCU Montevideo', time: '08:15', date: '2026-05-11', seats: 3, price: 60, car: 'Renault Sandero', isNew: false },
+  { id: 3, driver: 'Martin L.', from: 'Carrasco', to: 'UCU Montevideo', time: '09:00', date: '2026-05-11', seats: 1, price: 120, car: 'Ford Ka Rojo', isNew: false },
+];
+let nextId = 4;
+let currentFilter = 'todos';
+let toastTimer = null;
+
+// ============================================================
+//  NAVEGACION
+// ============================================================
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+
+  const statusBar = document.getElementById('statusBar');
+  statusBar.style.display = screenId === 'splash' ? 'none' : 'flex';
+
+  if (screenId === 'search') renderSearchList();
+  if (screenId === 'home')   renderHomeRecent();
+}
+
+// ============================================================
+//  RENDER HELPERS
+// ============================================================
+function buildRideCard(ride) {
+  const newBadge = ride.isNew
+    ? '<span class="ride-badge new">Nuevo</span>'
+    : `<span class="ride-badge">${ride.price} UYU</span>`;
+  return `
+    <div class="ride-card ${ride.isNew ? 'new-ride' : ''}" id="ride-${ride.id}">
+      <div class="ride-header">
+        <div class="ride-avatar">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="ride-name">${ride.driver}</div>
+          <div class="ride-meta">${ride.car}</div>
+        </div>
+        ${newBadge}
+      </div>
+      <div class="route-line">
+        <div class="route-point">
+          <div class="route-dot from"></div>
+          <span class="route-label">${ride.from}</span>
+        </div>
+        <div class="route-dashes"><span></span><span></span></div>
+        <div class="route-point">
+          <div class="route-dot to"></div>
+          <span class="route-label">${ride.to}</span>
+        </div>
+      </div>
+      <div class="ride-footer">
+        <div class="ride-info-chips">
+          <div class="chip">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            ${ride.time}
+          </div>
+          <div class="chip">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            ${ride.seats} asiento${ride.seats !== 1 ? 's' : ''}
+          </div>
+          ${ride.isNew ? `<div class="chip" style="background:#e8faf6;color:var(--teal);font-weight:700;">${ride.price} UYU</div>` : ''}
+        </div>
+        <button class="book-btn" onclick="bookRide(${ride.id})">Reservar</button>
+      </div>
+    </div>`;
+}
+
+function renderSearchList() {
+  const query  = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
+  const list   = document.getElementById('searchRidesList');
+  let filtered = ridesDB.filter(r => {
+    const matchQuery = !query || r.from.toLowerCase().includes(query) || r.to.toLowerCase().includes(query) || r.driver.toLowerCase().includes(query);
+    if (!matchQuery) return false;
+    if (currentFilter === 'todos') return true;
+    const h = parseInt(r.time.split(':')[0]);
+    if (currentFilter === 'manana') return h >= 6 && h < 12;
+    if (currentFilter === 'tarde')  return h >= 12 && h < 19;
+    if (currentFilter === 'noche')  return h >= 19 || h < 6;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>No hay viajes disponibles con ese filtro.</p>
+    </div>`;
+    return;
+  }
+  // Nuevos primero
+  filtered.sort((a,b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+  list.innerHTML = filtered.map(buildRideCard).join('');
+}
+
+function renderHomeRecent() {
+  const list = document.getElementById('homeRecentList');
+  const recent = [...ridesDB].reverse().slice(0, 2);
+  list.innerHTML = recent.map(buildRideCard).join('');
+}
+
+// ============================================================
+//  PUBLICAR VIAJE — FIX: actualiza estado y re-renderiza
+// ============================================================
+function publishRide() {
+  const from  = document.getElementById('fromInput').value.trim();
+  const to    = document.getElementById('toInput').value.trim();
+  const date  = document.getElementById('dateInput').value;
+  const time  = document.getElementById('timeInput').value;
+  const seats = parseInt(document.getElementById('seatsInput').value) || 0;
+  const price = parseInt(document.getElementById('priceInput').value) || 0;
+  const car   = document.getElementById('carInput').value.trim();
+
+  // Validacion
+  if (!from || !to || !date || !time || !seats || !price) {
+    showToast('Completa todos los campos obligatorios', true);
+    return;
+  }
+
+  // Crear nuevo viaje y agregarlo al estado global
+  const newRide = {
+    id: nextId++,
+    driver: 'Sofia T. (Tu)',
+    from,
+    to,
+    time,
+    date,
+    seats,
+    price,
+    car: car || 'Mi vehiculo',
+    isNew: true,
+  };
+  ridesDB.unshift(newRide); // agregar al principio
+
+  // Limpiar formulario
+  ['fromInput','toInput','dateInput','timeInput','seatsInput','priceInput','carInput','noteInput']
+    .forEach(id => { document.getElementById(id).value = ''; });
+
+  // Mostrar toast de exito
+  showToast('Viaje publicado! Ya aparece en Buscar');
+
+  // Actualizar estadisticas de perfil
+  const statViajes = document.getElementById('statViajes');
+  statViajes.textContent = parseInt(statViajes.textContent) + 1;
+
+  // Navegar a Buscar para que el usuario vea su viaje
+  setTimeout(() => {
+    goTo('search');
+    // Scroll al tope de la lista
+    setTimeout(() => {
+      const searchContent = document.querySelector('#search .scroll-content');
+      if (searchContent) searchContent.scrollTop = 0;
+    }, 100);
+  }, 1200);
+}
+
+// ============================================================
+//  RESERVAR VIAJE
+// ============================================================
+function bookRide(id) {
+  const ride = ridesDB.find(r => r.id === id);
+  if (!ride) return;
+  if (ride.seats <= 0) { showToast('No quedan asientos disponibles', true); return; }
+  ride.seats--;
+  if (ride.seats === 0) ridesDB = ridesDB.filter(r => r.id !== id);
+  showToast('Reserva confirmada! Buen viaje');
+  renderSearchList();
+  renderHomeRecent();
+  setTimeout(() => goTo('track'), 1400);
+}
+
+// ============================================================
+//  FILTROS DE BUSQUEDA
+// ============================================================
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderSearchList();
+}
+
+function filterRides() { renderSearchList(); }
+
+// ============================================================
+//  TOAST
+// ============================================================
+function showToast(msg, isError) {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  toastMsg.textContent = msg;
+  toast.style.background = isError ? 'var(--red)' : 'var(--teal)';
+  toast.style.color = isError ? 'white' : 'var(--navy)';
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+renderHomeRecent();
+</script>
+</body>
+</html>
